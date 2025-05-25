@@ -51,7 +51,7 @@ jobs:
 
       - name: Initialize database
         run: |
-          psql -h localhost -U testuser -d postgres -c "SELECT 'CREATE DATABASE testdb' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'testdb')\gexec"
+          psql -h localhost -U testuser -d postgres -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'testdb') THEN CREATE DATABASE testdb; END IF; END \$\$;"
         env:
           PGPASSWORD: testpass
 
