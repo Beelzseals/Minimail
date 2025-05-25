@@ -49,14 +49,19 @@ jobs:
       - name: Install uv
         run: pip install uv
 
-      - name: Install dependencies
-        run: uv pip install -r requirements.txt  # replace with pyproject.toml/lock as needed
+      - name: Initialize database
+        run: psql -h localhost -U testuser -c "CREATE DATABASE testdb;"
+        env:
+          PGPASSWORD: testpass
 
       - name: Run formatter (ruff format)
         run: uv pip install ruff && ruff format --check .
 
       - name: Run linter (ruff)
         run: ruff check .
+      
+      - name: Configure redis
+        run: echo "vm.overcommit_memory = 1" >> /etc/sysctl.conf && sysctl -p
 
       #- name: Run mypy (optional)
        # run: uv pip install mypy && mypy .
