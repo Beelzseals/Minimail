@@ -1,1 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+            os: [ubuntu-latest, windows-latest]
+    env:
+      PYTHONPATH: .
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports: [5432:5432]
+        options: >-
+          --health-cmd="pg_isready -U testuser" --health-interval=10s --health-timeout=5s --health-retries=5
+      redis:
+        image: redis:7
+        ports: [6379:6379]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+        
+      - name: Create virtual environment
+        run: python -m venv .venv
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Cache uv virtualenv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
+
+      - name: Enter virtual environment
+        run: . .venv/bin/activate
+
+      - name: Install dependencies with uv
+        run: |
+          uv pip install .
+        shell: bash
+
+      - name: Initialize database
+        run: |
+          psql -h localhost -U testuser -d postgres -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_database WHERE datname = 'testdb') THEN CREATE DATABASE testdb; END IF; END \$\$;"
+        env:
+          PGPASSWORD: testpass
+
+      - name: Run formatter (ruff format)
+        run: ruff format --check .
+
+      - name: Run linter (ruff)
+        run: ruff check .
+      
+      - name: Configure redis
+        run: echo "vm.overcommit_memory = 1" >> /etc/sysctl.conf && sysctl -p
+
+      #- name: Run mypy (optional)
+       # run: uv pip install mypy && mypy .
+
+     # - name: Run tests
+      #  run: pytest --cov=your_package --cov-report=xml
+
+     # - name: Upload coverage report
+      #  uses: codecov/codecov-action@v4
+       # with:
+        #  file: ./coverage.xml
+
+  # Optionally, add a job for Docker build
+  #docker-build:
+    #runs-on: ubuntu-latest
+    #steps:
+      #- uses: actions/checkout@v4
+      #- name: Build Docker image
+        #run: docker build -t myapp:ci .
 
