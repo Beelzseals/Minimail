@@ -50,7 +50,8 @@ jobs:
         run: pip install uv
 
       - name: Initialize database
-        run: psql -h localhost -U testuser -c "CREATE DATABASE testdb;"
+        run: |
+          psql -h localhost -U testuser -d postgres -c "CREATE DATABASE testdb;"
         env:
           PGPASSWORD: testpass
 
