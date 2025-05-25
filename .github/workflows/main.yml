@@ -35,7 +35,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # pick your target version
+          python-version: '3.12'
+        
+      - name: Create virtual environment
+        run: python -m venv .venv
 
       - name: Cache uv virtualenv
         uses: actions/cache@v4
